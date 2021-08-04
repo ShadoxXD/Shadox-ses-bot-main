@@ -1,26 +1,27 @@
-const { Discord, Client, MessageEmbed, WebhookClient} = require('discord.js');
-const client = global.client = new Client({fetchAllMembers: true});
-const fs = require('fs');
-const express = require('express');
-const request = require('request')
-const settings = require("./kokoreç.json")
-const app = express();
-client.on('voiceStateUpdate', (oldState, newState) => {
-     const shadoxteyitkanal = "" // register kanal id
-     let teyitkanaltani = client.channels.cache.get(shadoxteyitkanal); 
-     if(!teyitkanaltani) return console.log('Kanal Bulunamadı.');
-     let member = client.users.cache.get(newState.member.id);
-     if(!newState.channelID === shadoxteyitkanal);
-     if(!oldState.channelID === shadoxteyitkanal);
-         teyitkanaltani.join().then(connection => { 
-	    if (newState.channelID === shadoxteyitkanal){
-	    if(!newState.member.roles.cache.get('')) return; //kayıtsız rol id
-	   const dispatcher = connection.play(require("path").join(__dirname, './shadox.mp3')); // ses uzantısı
-            dispatcher.on('end', () => {
-                dispatcher.destroy();
-		return;
-            });
+const { MessageEmbed } = require('discord.js')
+const db = require('quick.db')
+const ayar = require('../ayarlar.json')
+exports.run = async (client, message, args) => {
+ 
+  let embed = new MessageEmbed().setFooter(ayar.footer).setTimestamp().setColor('0x2f3136')
+
+  if(!message.member.roles.cache.get(ayar.yetkili) && !message.member.hasPermission('ADMINISTRATOR')) return message.channel.send(embed.setDescription(`${ayar.no} ${message.author}, bu komutu kullanmak için yeterli yetkilere sahip değilsin.`)).then(m => m.delete({ timeout: 7000 }) && message.delete({ timeout: 7000 }))
+  const user = message.mentions.members.first() || message.guild.members.cache.get(args[0])
+  if(!user) return message.channel.send(embed.setDescription(`${ayar.dikkat} ${message.author}, bir kullanıcı etiketlemedin! \`.isimler @shadox/ID\` `))
+let isim = message.mentions.members.first() || message.guild.members.cache.get(args[0])
+var sayi = 1
+let data = db.get(`isim.${message.guild.id}`)
+let rol = db.fetch(`role.${message.guild.id}`)
+if(!data) return message.channel.send(embed.setDescription(`${ayar.sag} Kullanıcı sunucumuzda daha önce hiç kaydolmamış!`))
+let isimler = data.filter(x => x.userID === isim.id).map(x => `${ayar.sag} ${sayi++}- \`${ayar.tag} ${x.isim} | ${x.yas}\` `).join("\n")
+if(isimler === null) isimler = `${ayar.no} Kullanıcı sunucumuzda daha önce hiç kaydolmamış!`
+if(isimler === undefined) isimler = `${ayar.no} Kullanıcı sunucumuzda daha önce hiç kaydolmamış!`
+
+message.channel.send(embed.setDescription(`${ayar.yildiz} Kullanıcı sunucumuzda \`${sayi}\` kere kaydolmuş! Datasındaki isimleri:
+${isimler}`))
 }
-});
-});
-client.login(settings.lahmacun).then(c => console.log(`${client.user.tag} # Ses botu giriş sağladı!`)).catch(err => console.error("Bot giriş bilgileri yanlış olduğundan bota giriş yapılamadı!"));
+
+
+
+exports.conf = {enabled: true, guildOnly: true, aliases: []}
+exports.help = {name: 'isimler'}
